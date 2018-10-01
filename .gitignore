@@ -1,0 +1,8 @@
+.vscode
+bin
+*.pyc
+*.ign
+
+__pycache__
+.cache
+
