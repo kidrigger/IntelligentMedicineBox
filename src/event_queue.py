@@ -34,7 +34,6 @@ class EventQueue:
             for listener in self._event_listeners[etype]:
                 for event in self._event_queue[etype]:
                     listener.notify(event)
-        for etype in self._event_types:
             self._event_queue[etype] = []
         
     
