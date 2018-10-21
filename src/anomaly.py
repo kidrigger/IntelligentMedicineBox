@@ -69,16 +69,3 @@ class Anomaly:
 		#create notification event
 		anmly = Event('alert',data)
 		self._event_queue.new_event(anmly)
-
-
-	# def _get_meds_taken(self):
-	# 	meds_consumed = {}
-	# 	current_inventory = _inventory_manager.get_inventory()
-	# 	for med in current_inventory:
-	# 		if med in _inventory:
-	# 			quantitiy_consumed = _inventory[med]-current_inventory[med]
-	# 			if quantitiy_consumed>0:
-	# 				meds_consumed[med]=quantitiy_consumed
-	# 	_inventory = current_inventory
-	# 	return meds_consumed
-	# new medicine added in slot can only be checked for anmly from next slot
