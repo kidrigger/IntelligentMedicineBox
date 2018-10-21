@@ -33,12 +33,12 @@ class PrescriptionManager:
         self.new_prescription(prescription)
     
     def get_prescribed_medicine(self, timeslot):
-        timeslot_medicines = []
+        timeslot_medicines = {}
         for prescription in self._prescriptions:
             for medicine in prescription['medicines']:
                 slot_medcount = prescription['medicines'][medicine][timeslot] 
                 if slot_medcount > 0:
-                    timeslot_medicines.append((medicine,slot_medcount))
+                    timeslot_medicines[medicine] = slot_medcount
         return timeslot_medicines
 
     def get_next_slot(self, timeslot):

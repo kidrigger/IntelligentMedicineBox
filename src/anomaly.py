@@ -13,19 +13,17 @@ class Anomaly:
 	_event_queue = None
 
 	def _set_reminder(self,time):
-		#set reminder at 
+		#set reminder at end of timeslot 
 		time = self._prescription_manager.get_next_slot(time[0])
-		end_time = time[1] + 130
-		if (end_time%100)>=60:
-			end_time+=40
-		event = Event('timer',{'time':str(end_time),'etype':'anmly','data':time})
+		event = Event('timer',{'time':time[1][1],'etype':'anmly','data':{'time':time}})
 		self._event_queue.new_event(event)
 
 	def __init__(self, inventory_manager, prescription_manager, event_queue):
 		self._inventory_manager = inventory_manager
 		self._prescription_manager = prescription_manager
 		self._event_queue = event_queue
-		self._set_reminder([8,0])
+		self._event_queue.register(self, ['anmly'])
+		self._set_reminder((8,('0000','0000')))
 
 				
 	def _create_data(self,message,atype):
@@ -61,7 +59,7 @@ class Anomaly:
 
 
 	def notify(self,event):
-		time = event.data
+		time = event.data['time']
 		self._anomaly_detector(time)
 
 
