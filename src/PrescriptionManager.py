@@ -37,11 +37,12 @@ class PrescriptionManager:
            self. _current_slot = 1
 
     def get_prescribed_medicine(self, slot):
+        # returns which med to have and in what quantity
         medicines = []
         for prescription in self._prescriptions:
-            for medicine in prescription['id']:
-                if medicine[slot] > 0:
-                    medicines.append(medicine)
+           for medicine in prescription['medicines']:
+               if prescription['medicines'][medicine][slot] > 0:
+                   medicines.append((medicine,prescription['medicines'][medicine][slot]))
         return medicines
 
     def get_next_slot(self,slot):

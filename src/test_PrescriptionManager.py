@@ -40,9 +40,18 @@ def test_get_next_slot():
     assert(val[1] == '1')
     print("test_get_next_slot passed")
 
+def test_get_prescribed_medicine():
+    presMan = PrescriptionManager(None)
+    # assumed format of data in prescription {id : [{medicine : [slots] } ] }
+    prescription1 = {'id':1, 'medicines': {'med1':[1,0,2,0,3,0,4,0], 'med2':[9,2,3,4,5,6,7,8]} }
+    presMan.new_prescription(prescription1)
+    val = presMan.get_prescribed_medicine(0)
+    assert(len(val) == 2)
+    print("test_get_prescribed_medicine passed")
 
 
 test_new_prescription()
 test_delete_prescription()
 test_update_prescription()
 test_get_next_slot()
+test_get_prescribed_medicine()
