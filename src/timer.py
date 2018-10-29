@@ -60,6 +60,7 @@ class Timer:
             if self._current_time >= next_alarm_time.data['time']:   #if the time for this medicine alarm has come, notify.
                 event = next_alarm_time
                 #print(event)
+                event.data['time'] = to_hh_mm(event.data['time'])
                 self._event_queue.new_event(event)
                 self._alarm_time_queue.pop(0)
             else:
@@ -79,6 +80,13 @@ class Timer:
             
     def __init__(self, event_queue):
         self._event_queue = event_queue
+        event_queue.register(self, ['timer'])
         self._alarm_time_queue = []
         self._time_interval = 30                # Start the timer, and wake it now and 30 seconds hereafter
         self._start()
+
+def to_hh_mm(datetimeobj):
+    return datetimeobj.strftime('%H:%M')
+
+def get_current_time():
+    return to_hh_mm(datetime.now())

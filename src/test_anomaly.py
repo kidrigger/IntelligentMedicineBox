@@ -1,78 +1,152 @@
-import unittest
-from unittest.mock import *
 from anomaly import *
+from event_queue import *
+from inventory_manager import *
+from prescription_manager import *
 
-class Testclass:
-	def __init__(self):
-		pass
-class MyTest(unittest.TestCase):
+class listener:
+    record = []
+    name = "listener"
 
-	# def __init__(self):
-	inventory_manager = Testclass()
-	prescription_manager = Testclass()
-	event_queue = Testclass()
-	event_queue.new_event = Mock(return_value=1)
-	event_queue.register = Mock(return_value=1)
-	prescription_manager.get_next_slot = Mock(return_value=(1,('0','30')))
-	anmly = Anomaly(inventory_manager,prescription_manager,event_queue)
+    def __init__(self, evq, types = []):
+        self.record = []
+        evq.register(self, types)
+    
+    def notify(self, ev):
+        # print(self.name,'notified',ev.etype,ev.data)
+        self.record.append(ev)
+    
+def test_notify():
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	listener_ = listener(event_queue, ['alert'])
+	medicines = {'abc': {'pills': 5, 'weight':0.1}, 'alpha': {'pills': 4, 'weight':0.2} }
+	inventory_manager.update_medicines(medicines)
+	event = Event('weight_change', {'slot': 1, 'weight': 0.3, 'time':'09:00'})
+	event_queue.new_event(event)
+	event_queue.update() # inventory manager receives a weight_change event.
+	event_queue.update() # inventory manager sends out a pill_change event, which anomaly detector listens to.
+	# Now anomaly finds out that this is not in the current slot of prescription.
+	# Hence, emits a wrong med notification.
+	event_queue.update()
+	assert(len(listener_.record)==1)
+	event = listener_.record[0]
+	assert(event.etype=='alert')
+	assert(event.data['type']=='wrongmed')	
 
-	def test_notify(self):
-		event = Event('anmly',{'time':(1,('0','30'))})
-		self.inventory_manager.get_inventory_delta = Mock(return_value={})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={})
-		self.anmly.notify(event)
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(1)
+def test_check_wrong_dose():
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	listener_ = listener(event_queue, ['alert'])
+	medicines = {'abc': {'pills': 5, 'weight':0.1}, 'alpha': {'pills': 4, 'weight':0.2} }
+	inventory_manager.update_medicines(medicines)
+	event = Event('weight_change', {'slot': 1, 'weight': 0.3, 'time':'09:00'})
+	event_queue.new_event(event)
+	event_queue.update() # inventory manager receives a weight_change event.
+	event_queue.update() # inventory manager sends out a pill_change event, which anomaly detector listens to.
+	# Now anomaly finds out that this is not in the current slot of prescription.
+	# Hence, emits a wrong med notification.
+	event_queue.update()
+	assert(len(listener_.record)==1)
+	event = listener_.record[0]
+	assert(event.etype=='alert')
+	assert(event.data['type']=='wrongmed')	
 
-	def test_anomaly_detector(self):
-		self.inventory_manager.get_inventory_delta = Mock(return_value={'A':2})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={})
-		self.anmly._anomaly_detector((1,('21','22')))
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(1)
-		self.event_queue.new_event.assert_called()
+def test_check_overdose():
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
+	prescription_manager.new_prescription(prescription)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	listener_ = listener(event_queue, ['alert'])
 
-		self.inventory_manager.get_inventory_delta = Mock(return_value={'A':2})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={'A':1})
-		self.anmly._anomaly_detector((0,('1','2')))
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(0)
-		self.event_queue.new_event.assert_called()
+	medicines = {'abc': {'pills': 5, 'weight':0.1}, 'alpha': {'pills': 4, 'weight':0.2} }
+	inventory_manager.update_medicines(medicines)
+	event = Event('weight_change', {'slot': 0, 'weight': 0.3, 'time':'09:00'})
+	event_queue.new_event(event)
+	event_queue.update() # inventory manager receives a weight_change event.
+	event_queue.update() # inventory manager sends out a pill_change event, which anomaly detector listens to.
+	# Now anomaly finds out that this is more than prescription.
+	# Hence, emits an overdose notification.
+	event_queue.update()
+	assert(len(listener_.record)==1)
+	event = listener_.record[0]
+	assert(event.etype=='alert')
+	assert(event.data['type']=='overdose')	
 
-		self.inventory_manager.get_inventory_delta = Mock(return_value={'A':1})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={'A':2})
-		self.anmly._anomaly_detector((2,('11','12')))
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(2)
-		self.event_queue.new_event.assert_called()
-		
-		self.inventory_manager.get_inventory_delta = Mock(return_value={})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={'B':2})
-		self.anmly._anomaly_detector((0,('10','12')))
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(0)
-		self.event_queue.new_event.assert_called()
+def test_check_underdose():
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
+	prescription_manager.new_prescription(prescription)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	listener_ = listener(event_queue, ['alert'])
 
-		self.inventory_manager.get_inventory_delta = Mock(return_value={'A':1})
-		self.prescription_manager.get_prescribed_med = Mock(return_value={'A':1})
-		self.anmly._anomaly_detector((4,('0','2')))
-		self.inventory_manager.get_inventory_delta.assert_called_once()
-		self.prescription_manager.get_prescribed_med.assert_called_once_with(4)
-		self.event_queue.new_event.assert_called()
+	medicines = {'abc': {'pills': 50, 'weight':0.1}, 'alpha': {'pills': 40, 'weight':0.1} }
+	inventory_manager.update_medicines(medicines)
+	event = Event('weight_change', {'slot': 1, 'weight': 3.9, 'time':'13:39'})
+	#patient picks first pill.
+	event_queue.new_event(event)
+	event_queue.update() # inventory manager receives a weight_change event.
+	event_queue.update() # inventory manager sends out a pill_change event, which anomaly detector listens to.
+	# Now anomaly finds out that this is less than prescription.
+	# Hence, emits an underdose notification.
+	event_queue.update()
+	assert(len(listener_.record)==1)
+	event = listener_.record[0]
+	assert(event.etype=='alert')
+	assert(event.data['type']=='underdose')	
+	listener_.record.clear()
 
-	def test_create_data(self):
-		self.assertEqual(self.anmly._create_data('A','B'),{'msg':'A', 'type':'B'})
+	event = Event('weight_change', {'slot': 1, 'weight': 3.8, 'time':'13:40'})
+	# Patient picks up the second pill.
+	event_queue.new_event(event)
+	event_queue.update() # inventory manager receives a weight_change event.
+	event_queue.update() # inventory manager sends out a pill_change event, which anomaly detector listens to.
+	# Now anomaly finds out that this is less than prescription.
+	# Hence, emits an underdose notification.
+	event_queue.update()
+	assert(len(listener_.record)==0)
 
+#def test_slot_end_anomaly():
 
-	def test_set_reminder(self):
-		self.anmly._set_reminder((2,('0','1')))
-		self.prescription_manager.get_next_slot.assert_called_with(2)
-		self.event_queue.new_event.assert_called()
+def test_set_reminder():	
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
+	prescription_manager.new_prescription(prescription)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	anomaly_detector._set_reminder(constants.get_slot_time(0))
+	assert(len(event_queue._event_queue['timer'])==1)
+	event = event_queue._event_queue['timer'][0]
+	assert(event.data['time']==constants.get_slot_time(1)[1])
+	assert(event.data['etype']=='slot_end')
+	assert(event.data['timetuple']==constants.get_slot_time(1))
 
-	def test_anomaly_notifier(self):
-		self.anmly._anomaly_notifier({'msg':'foo','type':'wrongmed'})
-		self.event_queue.new_event.assert_called()
-
-if __name__=='__main__':
-	unittest.main()
+def test_anomaly_notifier():
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer'])
+	inventory_manager = InventoryManager(event_queue, 6)
+	prescription_manager = PrescriptionManager(event_queue)
+	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
+	prescription_manager.new_prescription(prescription)
+	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
+	anomaly_detector._anomaly_notifier({'msg':'foo', 'type':'wrongmed'})
+	assert(len(event_queue._event_queue['alert'])==1)
+	event = event_queue._event_queue['alert'][0]
+	assert(event.data['type']=='wrongmed')
+	assert(event.data['msg']=='foo')
 	
+
+#if __name__=='__main__':
+#	test_notify()
+#	test_check_wrong_dose()
+#	test_check_overdose()
+#	test_check_underdose()
+#	test_set_reminder()
+#	test_anomaly_notifier()
