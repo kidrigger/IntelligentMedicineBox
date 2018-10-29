@@ -1,89 +1,122 @@
-#!/bin/python3
+from inventory_manager import *
+from event_queue import *
 
-"""
-Inventory Manager
-Stores and manages the inventory of the medicines.
-"""
-from event_queue import Event
+class listener:
+    record = []
+    name = "listener"
 
-class Inventory:
-    _slot = []
-
-    def __init__(self, slots= 6):
-        self._slot = [0]*slots
-
-class InventoryManager:
-    _inventory = None
-    _event_queue = None
-    _medicines = None
-    _medicine_at = None
-    _slots = 0
+    def __init__(self, name, evq, types = []):
+        self.record = []
+        evq.register(self, types)
+        self.name = name
     
-    def __init__(self, event_queue, slots=6):
-        self._slots = slots
-        self._inventory = Inventory(self._slots)
-        self._event_queue = event_queue
-        self._medicines = {}
-        self._medicine_at = ['']*self._slots
+    def notify(self, ev):
+        # print(self.name,'notified',ev.etype,ev.data)
+        self.record.append(ev)
+    
+    def print_state(self):
+        print(self.name,':')
+        for ev in self.record:
+            print('\t',ev.etype, ev.data)
 
-    def get_slot(self, med_name_or_index):
-    	if type(med_name_or_index) == int :
-    		med_index = med_name_or_index
-    		return self._inventory._slot[med_index]
-    	else:
-    		med_name = med_name_or_index
-    		return self._inventory._slot[ self._medicines[med_name]['loc'] ]
+    def clear(self):
+        self.record = []
 
-    def _put_at(self, index, medicine_name, med_info):
-    	self._medicines[medicine_name] = med_info
-    	self._medicine_at[index] = medicine_name
-    	self._medicines[medicine_name]['loc'] = index
-    	self._inventory._slot[index] = med_info['pills']
+def test_inventory_manager_constructor():
+    eq = EventQueue()
+    inventory_man = InventoryManager(eq, 8)
+    assert(inventory_man._slots == 8)
+    assert(inventory_man._event_queue == eq)
+    assert(len(inventory_man._medicine_at) == 8)
 
-    def update_medicines(self, new_medicines):
-    	# If it's not possible to store these many medicines.
-    	if len(new_medicines) > self._slots:
-    		return None
+def test_update_medicines():
+    eq = EventQueue()
+    inventory_man = InventoryManager(eq, 8)
+    medicines = {'abc': {'pills': 5}, 'alpha': {'pills': 4} }
+    inventory_man.update_medicines(medicines)
+    assert(inventory_man.get_slot('abc') == 5)
+    assert(inventory_man.get_slot('alpha') == 4)
+    assert(inventory_man.get_slot(0) == 5)
+    assert(inventory_man.get_slot(1) == 4)
 
-    	marked_for_removal = []
-    	list_meds = list(new_medicines.keys())
+    medicines = {'aaa': {'pills': 19}, 'bbb': {'pills': 45}, 
+    'ccc': {'pills': 10}, 'ddd': {'pills': 40}, 'eee': {'pills': 29}, 
+    'fff': {'pills': 2} }
+    inventory_man.update_medicines(medicines)
+    assert(inventory_man.get_slot('abc') == 5)
+    assert(inventory_man.get_slot('alpha') == 4)
+    assert(inventory_man.get_slot('aaa') == 19)
+    assert(inventory_man.get_slot('bbb') == 45)
+    assert(inventory_man.get_slot('ccc') == 10)
+    assert(inventory_man.get_slot('ddd') == 40)
+    assert(inventory_man.get_slot('eee') == 29)
+    assert(inventory_man.get_slot('fff') == 2)
+        
+    assert(inventory_man.get_slot(0) == 5)
+    assert(inventory_man.get_slot(1) == 4)
+    assert(inventory_man.get_slot(2) == 19)
+    assert(inventory_man.get_slot(3) == 45)
+    assert(inventory_man.get_slot(4) == 10)
+    assert(inventory_man.get_slot(5) == 40)
+    assert(inventory_man.get_slot(6) == 29)
+    assert(inventory_man.get_slot(7) == 2)
 
-		# Mark all the old medicines for removal, if they are not needed again.	
-    	for i in range(0, self._slots):		
-    		if self._inventory._slot[i] != 0 and self._medicine_at[i] not in list_meds:
-    			marked_for_removal.append(i)
+def test_overwriting_med():
+    eq = EventQueue()
+    inventory_man = InventoryManager(eq, 8)
+    medicines = {'aaa': {'pills': 19}, 'bbb': {'pills': 45}, 
+    'ccc': {'pills': 10}, 'ddd': {'pills': 40}, 'eee': {'pills': 29}, 
+    'fff': {'pills': 2}, 'ggg': {'pills':3}, 'hhh': {'pills':5} }
+    inventory_man.update_medicines(medicines)
+    medicines = {'abc': {'pills': 1}, 'alpha': {'pills': 2} }
+    inventory_man.update_medicines(medicines)
+    assert(inventory_man.get_slot('abc') == 1)
+    assert(inventory_man.get_slot('alpha') == 2)
+    assert(inventory_man.get_slot(0) == 1)
+    assert(inventory_man.get_slot(1) == 2)
 
-    	new_med_index = 0
-    	new_med_count = len(new_medicines)
-    	
-    	# Fill all empty slots with new medicines first.
-    	for i in range(0, self._slots):	
-    		if new_med_index == new_med_count :
-    			return None
-    		if self._inventory._slot[i] == 0:
-    			medicine_name = list_meds[new_med_index]
-    			self._put_at(i, medicine_name, new_medicines[medicine_name])
-    			new_med_index += 1
+    assert(inventory_man.get_slot('ccc') == 10)
+    assert(inventory_man.get_slot('ddd') == 40)
+    assert(inventory_man.get_slot('eee') == 29)
+    assert(inventory_man.get_slot('fff') == 2)
+    assert(inventory_man.get_slot('ggg') == 3)
+    assert(inventory_man.get_slot('hhh') == 5)
+    
+    assert(inventory_man.get_slot(2) == 10)
+    assert(inventory_man.get_slot(3) == 40)
+    assert(inventory_man.get_slot(4) == 29)
+    assert(inventory_man.get_slot(5) == 2)
+    assert(inventory_man.get_slot(6) == 3)
+    assert(inventory_man.get_slot(7) == 5)
 
-		# If needed, overwrite old medicines.
-    	for i in marked_for_removal:	
-    		if new_med_index == new_med_count :
-    			return None
-    		medicine_name = list_meds[new_med_index]
-    		self._put_at(i, medicine_name, new_medicines[medicine_name])
-    		new_med_index += 1
+def test_get_inventory_data():
+    eq = EventQueue()
+    inventory_man = InventoryManager(eq, 8)
+    medicines = {'aaa': {'pills': 19}, 'bbb': {'pills': 45}, 
+    'ccc': {'pills': 10}, 'ddd': {'pills': 40}, 'eee': {'pills': 29}, 
+    'fff': {'pills': 2}, 'ggg': {'pills':3}, 'hhh': {'pills':5} }
+    inventory_man.update_medicines(medicines)
+    inventory = inventory_man.get_inventory_data()
+    assert(len(inventory)==8)
+    assert(inventory['aaa'] == 19)
+    assert(inventory['bbb'] == 45)
+    assert(inventory['ccc'] == 10)
+    assert(inventory['ddd'] == 40)
+    assert(inventory['eee'] == 29)
+    assert(inventory['fff'] == 2)
+    assert(inventory['ggg'] == 3)
+    assert(inventory['hhh'] == 5)
 
-    def get_inventory_data(self):
-    	med_count = {}
-    	for med in self._medicines:
-    		med_count[med] = self._inventory._slot[ self._medicines[med]['loc'] ]
-    	return med_count
-
-    def notify(self, event):
-    	if event.etype == 'weight_change':
-    		slot_num = event.data['slot']
-    		med_name = self._medicine_at[slot_num]
-    		med_weight = self._medicines[med_name]['weight']
-    		diff = round(event.data['weight'] / med_weight) - self._inventory._slot[slot_num]
-    		self._inventory._slot[slot_num] = round(event.data['weight'] / med_weight)
-    		self._event_queue.new_event(Event('pill_change', {med_name: diff} ))
+def test_notify():
+    eq = EventQueue(['weight_change', 'pill_change'])
+    inventory_man = InventoryManager(eq, 2)
+    medicines = {'abc': {'pills': 5, 'weight': 0.1}, 'alpha': {'pills': 2, 'weight': 0.2} }
+    inventory_man.update_medicines(medicines)
+    listener_ = listener('pill listener', eq, ['pill_change'])
+    event = Event('weight_change', {'slot': 0, 'weight': 0.3})
+    eq.new_event(event)
+    eq.update()
+    eq.update()
+    assert(len(listener_.record)==1)
+    assert(listener_.record[0].etype=='pill_change')
+    assert(listener_.record[0].data['abc'] == -2)

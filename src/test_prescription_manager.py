@@ -8,14 +8,14 @@ def test_new_prescription():
     prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
     pres_man.new_prescription(prescription)
     assert(len(pres_man._prescriptions)==1)
-    assert(pres_man.get_prescribed_medicine(0) == [] )
-    assert(pres_man.get_prescribed_medicine(1) == [('abc', 1)] )
-    assert(pres_man.get_prescribed_medicine(2) == [('def', 1)] )
-    assert(pres_man.get_prescribed_medicine(3) == [('def', 2)] )
-    assert(pres_man.get_prescribed_medicine(4) == [('abc', 1), ('def', 1) ] )
-    assert(pres_man.get_prescribed_medicine(5) == [] )
-    assert(pres_man.get_prescribed_medicine(6) == [('abc', 1)] )
-    assert(pres_man.get_prescribed_medicine(7) == [('abc', 1), ('def', 1)] )
+    assert(pres_man.get_prescribed_medicine(0) == {} )
+    assert(pres_man.get_prescribed_medicine(1) == {'abc': 1} )
+    assert(pres_man.get_prescribed_medicine(2) == {'def': 1} )
+    assert(pres_man.get_prescribed_medicine(3) == {'def': 2} )
+    assert(pres_man.get_prescribed_medicine(4) == {'abc': 1, 'def': 1} )
+    assert(pres_man.get_prescribed_medicine(5) == {} )
+    assert(pres_man.get_prescribed_medicine(6) == {'abc': 1} )
+    assert(pres_man.get_prescribed_medicine(7) == {'abc': 1, 'def': 1} )
 
 def test_del_prescription():
     evq = EventQueue(['presc_man', 'timeslot'])
@@ -81,7 +81,6 @@ def test_get_next_slot():
     assert(pres_man.get_next_slot(4) == 1)
     assert(pres_man.get_next_slot(6) == 1)
     assert(pres_man.get_next_slot(7) == 1)
-
 
 
 

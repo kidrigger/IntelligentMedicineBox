@@ -1,16 +1,18 @@
 #!/bin/python3
 from event_queue import *
-
+import constants
 
 class PrescriptionManager:
 
     _evq = None
     _prescriptions = None
+    _slots = []
+    _current_slot = 0
 
     def __init__(self, evq):
         self._prescriptions = []
         self._evq = evq
-        self._slots = [('0630','0800'),('0800','0930'),('1130','1300'),('1300','1430'),('1530','1700'),('1700','1830'),('1930','2100'),('2100','2230')]
+        self._slots = constants.slots
         self._current_slot = 0
         self._evq.register(self, ['presc_man', 'timeslot'])
 
@@ -33,30 +35,31 @@ class PrescriptionManager:
         self.new_prescription(prescription)
     
     def get_prescribed_medicine(self, timeslot):
-        timeslot_medicines = []
+        timeslot_medicines = {}
         for prescription in self._prescriptions:
+            print(prescription)
             for medicine in prescription['medicines']:
                 slot_medcount = prescription['medicines'][medicine][timeslot] 
                 if slot_medcount > 0:
-                    timeslot_medicines.append((medicine,slot_medcount))
+                    timeslot_medicines[medicine] = slot_medcount
         return timeslot_medicines
 
     def get_next_slot(self, timeslot):
-        for i in range(timeslot+1,9):
+        for i in range(timeslot+1, 8):
             for presc in self._prescriptions:
                 if presc['_slotarray_'][i] > 0:
-                    return self._slots[i]
-        for i in range(0,timeslot+1):
+                    return i
+        for i in range(0, timeslot+1):
             for presc in self._prescriptions:
                 if presc['_slotarray_'][i] > 0:
-                    return self._slots[i]
+                    return i
 
     def notify(self, event):
         if event.etype == 'timeslot':
             self._current_slot += event.data['timeinc']
-            ns = self.get_next_slot(self._current_slot)
+            next_slot = self.get_next_slot(self._current_slot)
             self.notify_user(self.get_prescribed_medicine(self._current_slot))
-            self._evq.new_event(Event('timer', {'time':self._slots[ns][0],'etype':'timeslot', 'timeinc':ns-self._current_slot}))
+            self._evq.new_event(Event('timer', {'time':self._slots[next_slot][0],'etype':'timeslot', 'timeinc':next_slot-self._current_slot}))
         elif event.etype == 'presc_man':
             if event.data['type'] == 'new':
                 self.new_prescription(event.data['prescription'])
