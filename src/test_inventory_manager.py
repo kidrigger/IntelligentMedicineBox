@@ -23,14 +23,14 @@ class listener:
         self.record = []
 
 def test_inventory_manager_constructor():
-    eq = EventQueue()
+    eq = EventQueue(['weight_change'])
     inventory_man = InventoryManager(eq, 8)
     assert(inventory_man._slots == 8)
     assert(inventory_man._event_queue == eq)
     assert(len(inventory_man._medicine_at) == 8)
 
 def test_update_medicines():
-    eq = EventQueue()
+    eq = EventQueue(['weight_change'])
     inventory_man = InventoryManager(eq, 8)
     medicines = {'abc': {'pills': 5}, 'alpha': {'pills': 4} }
     inventory_man.update_medicines(medicines)
@@ -62,7 +62,7 @@ def test_update_medicines():
     assert(inventory_man.get_slot(7) == 2)
 
 def test_overwriting_med():
-    eq = EventQueue()
+    eq = EventQueue(['weight_change'])
     inventory_man = InventoryManager(eq, 8)
     medicines = {'aaa': {'pills': 19}, 'bbb': {'pills': 45}, 
     'ccc': {'pills': 10}, 'ddd': {'pills': 40}, 'eee': {'pills': 29}, 
@@ -90,7 +90,7 @@ def test_overwriting_med():
     assert(inventory_man.get_slot(7) == 5)
 
 def test_get_inventory_data():
-    eq = EventQueue()
+    eq = EventQueue(['weight_change'])
     inventory_man = InventoryManager(eq, 8)
     medicines = {'aaa': {'pills': 19}, 'bbb': {'pills': 45}, 
     'ccc': {'pills': 10}, 'ddd': {'pills': 40}, 'eee': {'pills': 29}, 
@@ -113,7 +113,7 @@ def test_notify():
     medicines = {'abc': {'pills': 5, 'weight': 0.1}, 'alpha': {'pills': 2, 'weight': 0.2} }
     inventory_man.update_medicines(medicines)
     listener_ = listener('pill listener', eq, ['pill_change'])
-    event = Event('weight_change', {'slot': 0, 'weight': 0.3})
+    event = Event('weight_change', {'slot': 0, 'weight': 0.3, 'time':'12:30'})
     eq.new_event(event)
     eq.update()
     eq.update()

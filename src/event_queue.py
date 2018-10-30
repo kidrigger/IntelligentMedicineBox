@@ -27,6 +27,7 @@ class EventQueue:
             self._event_queue[etype] = []
 
     def new_event(self, event):
+        print('new_event', event.etype)
         self._event_queue[event.etype].append(event)
 
     def update(self):

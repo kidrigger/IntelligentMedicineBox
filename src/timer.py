@@ -32,9 +32,8 @@ class Timer:
         return alarm_time
 
     def notify(self, alarm_time):
-        #print("timer notified", alarm_time, self._alarm_time_queue)
-        
-        alarm_time.data['time'] = self._preprocess(alarm_time.data['time'])
+        if type(alarm_time.data['time']) == str:
+            alarm_time.data['time'] = self._preprocess(alarm_time.data['time'])
         alarm_time = Event(alarm_time.data['etype'], alarm_time.data)
         if len(self._alarm_time_queue) == 0 :
             self._alarm_time_queue.append(alarm_time)

@@ -1,6 +1,7 @@
 #!/bin/python3
 from event_queue import *
 import constants
+from copy import deepcopy
 
 class PrescriptionManager:
 
@@ -61,12 +62,14 @@ class PrescriptionManager:
             self.notify_user(self.get_prescribed_medicine(self._current_slot))
             self._evq.new_event(Event('timer', {'time':self._slots[next_slot][0],'etype':'timeslot', 'timeinc':next_slot-self._current_slot}))
         elif event.etype == 'presc_man':
+            event_data = deepcopy(event.data)
+            #print(event_data)
             if event.data['type'] == 'new':
-                self.new_prescription(event.data['prescription'])
+                self.new_prescription(event_data['prescription'])
             elif event.data['type'] == 'update':
-                self.update_prescription(event.data['prescription'])
+                self.update_prescription(event_data['prescription'])
             elif event.data['type'] == 'delete':
-                self.delete_prescription(event.data['prescription_id'])
+                self.delete_prescription(event_data['prescription_id'])
     
     def notify_user(self, what):
         self._evq.new_event(Event('message',{'data': what}))
