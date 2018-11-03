@@ -17,7 +17,7 @@ class EventQueue:
     _event_queue = {}
     _event_types = []
     _event_listeners = {}
-
+    
     def __init__(self,event_types = []):
         self._event_types = event_types[:]
         self._event_queue = {}
@@ -27,6 +27,7 @@ class EventQueue:
             self._event_queue[etype] = []
 
     def new_event(self, event):
+        print('new_event', event.etype)
         self._event_queue[event.etype].append(event)
 
     def update(self):
@@ -35,7 +36,6 @@ class EventQueue:
                 for event in self._event_queue[etype]:
                     listener.notify(event)
             self._event_queue[etype] = []
-        
     
     def register(self, listener, listen_etypes = []):
         for etype in listen_etypes:

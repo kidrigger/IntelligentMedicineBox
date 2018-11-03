@@ -24,13 +24,14 @@ def create_alarm(time):
 	return time_str
 
 def test_notify():
-	event_queue = EventQueue([])
+	event_queue = EventQueue(['timer'])
 	timer = Timer(event_queue)
 	event  = Event('timer', {'time': create_alarm(1), 'etype': 'test1'})
 	assert(len(timer._alarm_time_queue)==0)
 	timer.notify(event)
 	assert(len(timer._alarm_time_queue)==1)
-
+	timer.stop()
+	
 def test_timer():
 	event_queue = EventQueue(['test1', 'timer', 'test2'])
 	timer = Timer(event_queue)
@@ -39,7 +40,6 @@ def test_timer():
 
 	event  = Event('timer', {'time': create_alarm(1), 'etype': 'test1'})
 	event2 = Event('timer', {'time': create_alarm(2), 'etype': 'test2'})
-	event_queue.register(timer, ['timer'])
 	event_queue.new_event(event)
 	event_queue.new_event(event2)
 	#timer_stop = threading.Event()
@@ -56,6 +56,7 @@ def test_timer():
 	assert(len(listener_.record)==2)
 
 	print("Basic timer test passed!")
+	timer.stop()
 
 def test_one_to_many():
 	event_queue = EventQueue(['timer', 'test1', 'test2', 'test3', 'test4', 'test5'])
@@ -63,7 +64,6 @@ def test_one_to_many():
 	time_interval = 60 							# Update event queue after every 60 seconds.
 	listener_ = listener('a listener', event_queue, ['test1', 'test2', 'test3', 'test4', 'test5'])
 
-	event_queue.register(timer, ['timer'])
 	for i in ['test1', 'test2', 'test3', 'test4', 'test5']:
 		event  = Event('timer', {'time': create_alarm(int(i[4])), 'etype': i})
 		event_queue.new_event(event)
@@ -74,6 +74,7 @@ def test_one_to_many():
 		time.sleep(61)
 
 	print("One listener with many alarms test passed!")
+	timer.stop()
 
 def test_one_to_one():
 	event_queue = EventQueue(['timer', 'test1', 'test2', 'test3', 'test4', 'test5'])
@@ -84,7 +85,6 @@ def test_one_to_one():
 	for alarm_type in ['test1', 'test2', 'test3', 'test4', 'test5']:
 		listeners.append(listener('a listener', event_queue, [alarm_type]))
 
-	event_queue.register(timer, ['timer'])
 	for i in ['test1', 'test2', 'test3', 'test4', 'test5']:
 		event = Event('timer', {'time': create_alarm(1), 'etype': i})
 		event_queue.new_event(event)
@@ -98,9 +98,10 @@ def test_one_to_one():
 		assert(listeners[i-1].record[0].etype == 'test'+str(i) )
 
 	print("5 listeners with one alarm each test passed!")
+	timer.stop()
 	
 def test_timer_stop():
-	event_queue = EventQueue([])
+	event_queue = EventQueue(['timer'])
 	timer = Timer(event_queue)
 	event = Event('timer', {'time': create_alarm(1), 'etype': 'test1'})
 	assert(len(timer._alarm_time_queue)==0)
@@ -114,7 +115,13 @@ def test_timer_stop():
 
 if __name__ == '__main__':
 	test_notify()
+	print('test_notify() passed')
 	test_timer()
+	print('test_timer() passed')
 	test_timer_stop()
+	print('test_timer_stop() passed')
 	test_one_to_many()
+	print('test_one_to_many() passed')
 	test_one_to_one()
+	print('test_one_to_one() passed')
+	print('all tests passed')
