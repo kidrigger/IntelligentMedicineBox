@@ -23,3 +23,11 @@ $ python3 src/main.py
 While running main, when it prompts for input with '>>>', give medicine box number (0 to 5 as per the current prescription), and give the new weight of medicines in that box.
 
 It will calculate the difference in weight, count the number of pills, and compare it with the number of pills in prescripton, send an alert to firebase if needed. The alert will be shown on android app.
+
+## Team : 
+Hackstreet boys:
+1. Ravishankar Joshi
+2. Anish Bhobe
+3. Sugam Budhraja
+4. Ameya Sinha
+5. Abhiraj Hinge
