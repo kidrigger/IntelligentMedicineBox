@@ -16,7 +16,7 @@ class PrescriptionManager:
         self._slots = constants.slots
         self._current_slot = 0
         self._evq.register(self, ['presc_man', 'timeslot', 'slot_begin'])
-        time = constants.get_slot_time(5)
+        time = constants.get_slot_time(0)
         next_slot_begin = Event('timer', {'time':time[0], 'etype':'slot_begin', 'timetuple':time} )
         self._evq.new_event(next_slot_begin)
 
