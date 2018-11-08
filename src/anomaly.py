@@ -71,10 +71,9 @@ class Anomaly:
 				pills_taken = meds_consumed[med_name]
 				self._check_overdose(med_name, -pills_taken, meds_prescribed)
 				self._check_underdose(med_name, -pills_taken, meds_prescribed)
-
 		#self._set_reminder(timetuple)
-
-
+		
+		        
 	def notify(self,event):
 		if event.etype == 'slot_end':
 			timetuple = event.data['timetuple'] #Based on the timer event its passing into event_queue.

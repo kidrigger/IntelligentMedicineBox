@@ -28,12 +28,14 @@ class EventQueue:
 
     def new_event(self, event):
         print('new_event', event.etype)
+        #print(event)
         self._event_queue[event.etype].append(event)
 
     def update(self):
         for etype in self._event_types:
             for listener in self._event_listeners[etype]:
                 for event in self._event_queue[etype]:
+                    #print(listener)
                     listener.notify(event)
             self._event_queue[etype] = []
     

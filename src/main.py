@@ -7,15 +7,16 @@ from time import sleep
 from anomaly import Anomaly
 
 def main():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'new_pres', 'timer'])
-	prescription_manager = PrescriptionManager(event_queue)
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'new_pres', 'timer','slot_begin'])
+	prescription_manager = PrescriptionManager(event_queue)	
 	inventory_manager = InventoryManager(event_queue)
 	timer = Timer(event_queue)
+
 	anomaly = Anomaly(inventory_manager, prescription_manager, event_queue)
 	notifier = Notifier(event_queue, 'patient')
 	print ('All objects created')
 	
-	prescription = {'id': '1', 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]}, 'expiry_date':'12/11/2018' }
+	prescription = {'id': '1', 'medicines':{'abc':[2, 1, 1, 1, 1, 1, 1, 1], 'def':[2, 2, 1, 2, 1, 1, 2, 1]}, 'expiry_date':'12/11/2018' }
 	new_prescription = Event('presc_man', {'type': 'new', 'prescription':prescription})
 	event_queue.new_event(new_prescription)
 	
@@ -34,6 +35,7 @@ def main():
 			event = Event('weight_change', {'slot': slot_num, 'weight': weight, 'time': get_current_time()})
 			event_queue.new_event(event)
 		print(event_queue._event_queue)
+		#print("In main")
 		event_queue.update()
 		sleep(60)
 

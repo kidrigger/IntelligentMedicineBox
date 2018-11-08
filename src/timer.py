@@ -18,6 +18,7 @@ class Timer:
     
     # Converts time from string to datetime object.
     def _preprocess(self, alarm_time):
+        #print(alarm_time)
         today_date = date.today()
         self._current_time = datetime.now()
         alarm_time_HH_MM = alarm_time.split(':')
@@ -28,10 +29,11 @@ class Timer:
         alarm_time = datetime.combine(today_date, time_obj) # Assume alarm is set for today at the given time.
 
         if alarm_time < self._current_time :                # If that time is already past, it's for tomorrow.
-            alarm_time = alarm_time.replace(date=today_date.date + 1)
+            alarm_time = alarm_time.replace(day=today_date.day + 1)
         return alarm_time
 
     def notify(self, alarm_time):
+        #print("Event has entered Timer")
         if type(alarm_time.data['time']) == str:
             alarm_time.data['time'] = self._preprocess(alarm_time.data['time'])
         alarm_time = Event(alarm_time.data['etype'], alarm_time.data)
