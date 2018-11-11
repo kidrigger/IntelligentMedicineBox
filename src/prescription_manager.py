@@ -64,9 +64,11 @@ class PrescriptionManager:
     def _create_reminder(self,timetuple):
         curr_time_slot = constants.get_slot_num(timetuple)
         meds_prescribed = self.get_prescribed_medicine(curr_time_slot)
-        message="Your dose for timeslot is "+str(meds_prescribed)
-        print (message)
-        self.notify_user(self._create_data(message,'reminder'))
+        for key,value in meds_prescribed.items():
+             message="You have to take "+str(value)+" pill of "+str(key)+" in this slot" 	        
+             print (message)
+             self.notify_user(self._create_data(message,'reminder'))			
+
 
 
 
