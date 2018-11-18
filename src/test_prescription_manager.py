@@ -3,7 +3,7 @@ from prescription_manager import *
 from event_queue import *
 
 def test_new_prescription():
-    evq = EventQueue(['presc_man', 'timeslot'])
+    evq = EventQueue(['presc_man', 'timeslot', 'slot_begin', 'timer'])
     pres_man = PrescriptionManager(evq)
     prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
     pres_man.new_prescription(prescription)
@@ -18,7 +18,7 @@ def test_new_prescription():
     assert(pres_man.get_prescribed_medicine(7) == {'abc': 1, 'def': 1} )
 
 def test_del_prescription():
-    evq = EventQueue(['presc_man', 'timeslot'])
+    evq = EventQueue(['presc_man', 'timeslot', 'slot_begin', 'timer'])
     pres_man = PrescriptionManager(evq)
     prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
     pres_man.new_prescription(prescription)
@@ -38,7 +38,7 @@ def test_del_prescription():
     assert(3 == pres_man._prescriptions[0]['id'])
 
 def test_update_prescription():
-    evq = EventQueue(['presc_man', 'timeslot'])
+    evq = EventQueue(['presc_man', 'timeslot', 'slot_begin', 'timer'])
     pres_man = PrescriptionManager(evq)
     prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
     pres_man.new_prescription(prescription)
@@ -60,7 +60,7 @@ def test_update_prescription():
     assert(prescription['medicines'] == presc2['medicines'])
 
 def test_get_next_slot():
-    evq = EventQueue(['presc_man', 'timeslot'])
+    evq = EventQueue(['presc_man', 'timeslot', 'slot_begin', 'timer'])
     pres_man = PrescriptionManager(evq)
     prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
     pres_man.new_prescription(prescription)
@@ -82,6 +82,16 @@ def test_get_next_slot():
     assert(pres_man.get_next_slot(6) == 1)
     assert(pres_man.get_next_slot(7) == 1)
 
-
-
+def test_send_med_reminder():
+    evq = EventQueue(['presc_man', 'timeslot', 'slot_begin', 'timer', 'alert'])
+    pres_man = PrescriptionManager(evq)
+    prescription = {'id': 1, 'medicines':{'abc':[1, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
+    pres_man.new_prescription(prescription)
+    assert(len(evq._event_queue['timer'])==1)
+    evq.update()    # Event queue sends out an alarm event to timer for prescription manager for the next slot.
+    pres_man._send_med_reminder(0)
+    assert(len(evq._event_queue['alert'])==1)
+    alert_event = evq._event_queue['alert'][0]
+    assert(alert_event.etype == 'alert')
+    assert(alert_event.data['type'] == 'reminder')
 

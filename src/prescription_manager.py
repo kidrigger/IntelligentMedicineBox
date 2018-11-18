@@ -1,6 +1,7 @@
 #!/bin/python3
 from event_queue import *
 import constants
+from timer import get_current_time
 from copy import deepcopy
 
 class PrescriptionManager:
@@ -10,16 +11,24 @@ class PrescriptionManager:
     _slots = []
     _current_slot = 0
 
-    def __init__(self, evq):
+    def __init__(self, evq, slot_num=None):
+        if slot_num is None:
+            slot_num = constants.get_slot_num(get_current_time())
+        self._current_slot = slot_num
         self._prescriptions = []
         self._evq = evq
         self._slots = constants.slots
-        self._current_slot = 0
         self._evq.register(self, ['presc_man', 'timeslot', 'slot_begin'])
-        time = constants.get_slot_time(0)
-        next_slot_begin = Event('timer', {'time':time[0], 'etype':'slot_begin', 'timetuple':time} )
-        self._evq.new_event(next_slot_begin)
+        #print(slot_num)
+        self._set_next_slot_alarm(slot_num)
 
+    def _set_next_slot_alarm(self, slot_num):
+        #print(slot_num)
+        next_slot_index = (slot_num+1)%8
+        #print(next_slot_index)
+        next_slot_time = constants.get_slot_time(next_slot_index)
+        next_slot_begin_event = Event('timer', {'time':next_slot_time[0], 'etype':'slot_begin', 'timetuple':next_slot_time} )
+        self._evq.new_event(next_slot_begin_event)
 
     def new_prescription(self, prescription):
         slotarray = [0]*8
@@ -58,27 +67,16 @@ class PrescriptionManager:
             for presc in self._prescriptions:
                 if presc['_slotarray_'][i] > 0:
                     return i
-    def _create_data(self,message,atype):
-        return {'msg':message, 'type':atype}
      
-    def _create_reminder(self,timetuple):
-        curr_time_slot = constants.get_slot_num(timetuple)
-        meds_prescribed = self.get_prescribed_medicine(curr_time_slot)
+    def _send_med_reminder(self, timeslot):
+        meds_prescribed = self.get_prescribed_medicine(timeslot)
         for key,value in meds_prescribed.items():
              message="You have to take "+str(value)+" pill of "+str(key)+" in this slot" 	        
-             print (message)
-             self.notify_user(self._create_data(message,'reminder'))			
-
-
-
+             #print (message)
+             self.notify_user({'msg':message, 'type':'reminder'})
 
     def notify(self, event):
-        if event.etype == 'timeslot':
-            self._current_slot += event.data['timeinc']
-            next_slot = self.get_next_slot(self._current_slot)
-            self.notify_user(self.get_prescribed_medicine(self._current_slot))
-            self._evq.new_event(Event('timer', {'time':self._slots[next_slot][0],'etype':'timeslot', 'timeinc':next_slot-self._current_slot}))
-        elif event.etype == 'presc_man':
+        if event.etype == 'presc_man':
             event_data = deepcopy(event.data)
             #print(event_data)
             if event.data['type'] == 'new':
@@ -88,14 +86,14 @@ class PrescriptionManager:
             elif event.data['type'] == 'delete':
                 self.delete_prescription(event_data['prescription_id'])
         elif event.etype == 'slot_begin':
-            self._create_reminder(event.data['timetuple'])
-            next_slot_index = self.get_next_slot(constants.get_slot_num(event.data['timetuple']))
-            time = constants.get_slot_time(next_slot_index)
-            new_slot = Event('timer', {'time':time[0], 'etype':'slot_begin', 'timetuple':time} )
-            self._evq.new_event(new_slot)
-
+            self._current_slot = constants.get_slot_num(event.data['timetuple'])
+            self._send_med_reminder(self._current_slot)
+            self._set_next_slot_alarm(self._current_slot)
+        else:
+            print('unknown event in prescription manager', event)
+            assert(False)
 
     
     def notify_user(self, what):
-        self._evq.new_event(Event('alert',{'data': what}))
+        self._evq.new_event(Event('alert', what))
 

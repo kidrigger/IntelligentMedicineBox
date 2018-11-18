@@ -2,6 +2,7 @@ from anomaly import *
 from event_queue import *
 from inventory_manager import *
 from prescription_manager import *
+from timer import *
 
 class listener:
     record = []
@@ -16,8 +17,9 @@ class listener:
         self.record.append(ev)
     
 def test_notify():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'slot_begin', 'timer'])
 	inventory_manager = InventoryManager(event_queue, 6)
+	timer = Timer(event_queue)
 	prescription_manager = PrescriptionManager(event_queue)
 	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
 	listener_ = listener(event_queue, ['alert'])
@@ -34,10 +36,12 @@ def test_notify():
 	event = listener_.record[0]
 	assert(event.etype=='alert')
 	assert(event.data['type']=='wrongmed')	
+	timer.stop()
 
 def test_check_wrong_dose():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'slot_begin', 'timer'])
 	inventory_manager = InventoryManager(event_queue, 6)
+	timer = Timer(event_queue)
 	prescription_manager = PrescriptionManager(event_queue)
 	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
 	listener_ = listener(event_queue, ['alert'])
@@ -53,10 +57,12 @@ def test_check_wrong_dose():
 	assert(len(listener_.record)==1)
 	event = listener_.record[0]
 	assert(event.etype=='alert')
-	assert(event.data['type']=='wrongmed')	
+	assert(event.data['type']=='wrongmed')
+	timer.stop()	
 
 def test_check_overdose():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'slot_begin', 'timer'])
+	timer = Timer(event_queue)
 	inventory_manager = InventoryManager(event_queue, 6)
 	prescription_manager = PrescriptionManager(event_queue)
 	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'def':[0, 0, 1, 2, 1, 0, 0, 1]} }
@@ -76,10 +82,12 @@ def test_check_overdose():
 	assert(len(listener_.record)==1)
 	event = listener_.record[0]
 	assert(event.etype=='alert')
-	assert(event.data['type']=='overdose')	
+	assert(event.data['type']=='overdose')		
+	timer.stop()	
 
 def test_check_underdose():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'slot_begin', 'timer'])
+	timer = Timer(event_queue)
 	inventory_manager = InventoryManager(event_queue, 6)
 	prescription_manager = PrescriptionManager(event_queue)
 	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
@@ -112,15 +120,18 @@ def test_check_underdose():
 	# Hence, emits an underdose notification.
 	event_queue.update()
 	assert(len(listener_.record)==0)
+	timer.stop()	
 
 #def test_slot_end_anomaly():
 
 def test_set_reminder():	
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer', 'slot_begin', 'timer'])
 	inventory_manager = InventoryManager(event_queue, 6)
-	prescription_manager = PrescriptionManager(event_queue)
+	timer = Timer(event_queue)
+	prescription_manager = PrescriptionManager(event_queue, 0)
 	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
 	prescription_manager.new_prescription(prescription)
+	event_queue.update()
 	anomaly_detector = Anomaly(inventory_manager, prescription_manager, event_queue)
 	anomaly_detector._set_reminder(constants.get_slot_time(0))
 	assert(len(event_queue._event_queue['timer'])==1)
@@ -128,9 +139,11 @@ def test_set_reminder():
 	assert(event.data['time']==constants.get_slot_time(1)[1])
 	assert(event.data['etype']=='slot_end')
 	assert(event.data['timetuple']==constants.get_slot_time(1))
+	timer.stop()	
 
 def test_anomaly_notifier():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer'])
+	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'timer', 'slot_begin', 'timer'])
+	timer = Timer(event_queue)
 	inventory_manager = InventoryManager(event_queue, 6)
 	prescription_manager = PrescriptionManager(event_queue)
 	prescription = {'id': 1, 'medicines':{'abc':[0, 1, 0, 0, 1, 0, 1, 1], 'alpha':[0, 0, 1, 2, 1, 0, 0, 1]} }
@@ -141,7 +154,7 @@ def test_anomaly_notifier():
 	event = event_queue._event_queue['alert'][0]
 	assert(event.data['type']=='wrongmed')
 	assert(event.data['msg']=='foo')
-	
+	timer.stop()	
 
 #if __name__=='__main__':
 #	test_notify()
