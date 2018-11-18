@@ -8,4 +8,4 @@ __pycache__
 .cache
 .DS_Store
 .pyc
-.pytest_cache/
+*.pytest_cache/*
