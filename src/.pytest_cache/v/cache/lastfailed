@@ -1,0 +1,15 @@
+{
+  "test_anomaly.py::test_anomaly_notifier": true, 
+  "test_anomaly.py::test_check_overdose": true, 
+  "test_anomaly.py::test_check_underdose": true, 
+  "test_anomaly.py::test_check_wrong_dose": true, 
+  "test_anomaly.py::test_notify": true, 
+  "test_anomaly.py::test_set_reminder": true, 
+  "test_inventory_manager.py::test_notify": true, 
+  "test_inventory_manager.py::test_overwriting_med": true, 
+  "test_inventory_manager.py::test_update_medicines": true, 
+  "test_prescription_manager.py::test_del_prescription": true, 
+  "test_prescription_manager.py::test_get_next_slot": true, 
+  "test_prescription_manager.py::test_new_prescription": true, 
+  "test_prescription_manager.py::test_update_prescription": true
+}

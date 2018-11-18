@@ -15,7 +15,11 @@ class PrescriptionManager:
         self._evq = evq
         self._slots = constants.slots
         self._current_slot = 0
-        self._evq.register(self, ['presc_man', 'timeslot'])
+        self._evq.register(self, ['presc_man', 'timeslot', 'slot_begin'])
+        time = constants.get_slot_time(0)
+        next_slot_begin = Event('timer', {'time':time[0], 'etype':'slot_begin', 'timetuple':time} )
+        self._evq.new_event(next_slot_begin)
+
 
     def new_prescription(self, prescription):
         slotarray = [0]*8
@@ -54,6 +58,19 @@ class PrescriptionManager:
             for presc in self._prescriptions:
                 if presc['_slotarray_'][i] > 0:
                     return i
+    def _create_data(self,message,atype):
+        return {'msg':message, 'type':atype}
+     
+    def _create_reminder(self,timetuple):
+        curr_time_slot = constants.get_slot_num(timetuple)
+        meds_prescribed = self.get_prescribed_medicine(curr_time_slot)
+        for key,value in meds_prescribed.items():
+             message="You have to take "+str(value)+" pill of "+str(key)+" in this slot" 	        
+             print (message)
+             self.notify_user(self._create_data(message,'reminder'))			
+
+
+
 
     def notify(self, event):
         if event.etype == 'timeslot':
@@ -70,7 +87,15 @@ class PrescriptionManager:
                 self.update_prescription(event_data['prescription'])
             elif event.data['type'] == 'delete':
                 self.delete_prescription(event_data['prescription_id'])
+        elif event.etype == 'slot_begin':
+            self._create_reminder(event.data['timetuple'])
+            next_slot_index = self.get_next_slot(constants.get_slot_num(event.data['timetuple']))
+            time = constants.get_slot_time(next_slot_index)
+            new_slot = Event('timer', {'time':time[0], 'etype':'slot_begin', 'timetuple':time} )
+            self._evq.new_event(new_slot)
+
+
     
     def notify_user(self, what):
-        self._evq.new_event(Event('message',{'data': what}))
+        self._evq.new_event(Event('alert',{'data': what}))
 
