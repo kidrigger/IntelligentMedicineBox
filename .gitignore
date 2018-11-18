@@ -1,0 +1,11 @@
+.vscode
+bin
+*.pyc
+*.ign
+*.json
+
+__pycache__
+.cache
+.DS_Store
+.pyc
+.pytest_cache/
