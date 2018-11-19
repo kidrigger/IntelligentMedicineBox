@@ -5,6 +5,7 @@ from timer import *
 from notifier import Notifier
 from time import sleep
 from anomaly import Anomaly
+import getpass
 
 def main():
 	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'new_pres', 'timer','slot_begin'])
@@ -13,7 +14,9 @@ def main():
 	timer = Timer(event_queue)
 
 	anomaly = Anomaly(inventory_manager, prescription_manager, event_queue)
-	notifier = Notifier(event_queue, 'patient@example.com', 'patient')
+	email = input('Please enter patient email id: ')
+	password = getpass.getpass('Please enter patient password: ')
+	notifier = Notifier(event_queue, email, password)
 	print ('All objects created')
 	
 	prescription = {'id': '1', 'medicines':{'abc':[2, 1, 1, 1, 1, 1, 1, 1], 'def':[2, 2, 1, 2, 1, 1, 2, 1]}, 'expiry_date':'12/11/2018' }
