@@ -6,9 +6,10 @@ from notifier import Notifier
 from time import sleep
 from anomaly import Anomaly
 import getpass
+from threading import Lock, Thread
 
+event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'new_pres', 'timer','slot_begin'])	
 def main():
-	event_queue = EventQueue(['slot_end', 'weight_change', 'pill_change', 'presc_man', 'timeslot', 'alert', 'new_pres', 'timer','slot_begin'])
 	prescription_manager = PrescriptionManager(event_queue)	
 	inventory_manager = InventoryManager(event_queue)
 	timer = Timer(event_queue)
@@ -30,16 +31,25 @@ def main():
 	event_queue.update()
 	sleep(1)
 
+	lock = threading.Lock()
+	threading.Thread(target = inputloop, args=(lock,)).start()
+
 	while(True):
-		slot_num= input('>>>')
-		if slot_num != '-1':
-			slot_num = int(slot_num)
-			weight = float(input())
-			event = Event('weight_change', {'slot': slot_num, 'weight': weight, 'time': get_current_time()})
-			event_queue.new_event(event)
+		lock.acquire()
 		print(event_queue._event_queue)
 		#print("In main")
 		event_queue.update()
+		lock.release()
 		sleep(60)
+
+def inputloop(lock):
+	while(True):
+		slot_num= input('>>>')
+		slot_num = int(slot_num)
+		weight = float(input())
+		event = Event('weight_change', {'slot': slot_num, 'weight': weight, 'time': get_current_time()})
+		lock.acquire()
+		event_queue.new_event(event)
+		lock.release()
 
 main()
