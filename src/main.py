@@ -13,7 +13,7 @@ def main():
 	timer = Timer(event_queue)
 
 	anomaly = Anomaly(inventory_manager, prescription_manager, event_queue)
-	notifier = Notifier(event_queue, 'patient')
+	notifier = Notifier(event_queue, 'patient@example.com', 'patient')
 	print ('All objects created')
 	
 	prescription = {'id': '1', 'medicines':{'abc':[2, 1, 1, 1, 1, 1, 1, 1], 'def':[2, 2, 1, 2, 1, 1, 2, 1]}, 'expiry_date':'12/11/2018' }
@@ -38,10 +38,5 @@ def main():
 		#print("In main")
 		event_queue.update()
 		sleep(60)
-
-	#del event_queue
-	#del prescription_manager
-	#del timer
-	#print ("Deletion Done")
 
 main()

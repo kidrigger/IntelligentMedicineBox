@@ -81,8 +81,10 @@ class PrescriptionManager:
             #print(event_data)
             if event.data['type'] == 'new':
                 self.new_prescription(event_data['prescription'])
+                self._send_med_reminder(self._current_slot)
             elif event.data['type'] == 'update':
                 self.update_prescription(event_data['prescription'])
+                self._send_med_reminder(self._current_slot)
             elif event.data['type'] == 'delete':
                 self.delete_prescription(event_data['prescription_id'])
         elif event.etype == 'slot_begin':
