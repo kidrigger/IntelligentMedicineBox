@@ -120,4 +120,7 @@ class InventoryManager:
     def get_inventory_delta(self, timetuple):
         if self._delta[0] >= timetuple[0] and self._delta[0] <= timetuple[1]:
             return self._delta[1]
-        return None
+        x = {}
+        for i in self._medicine_at:
+            x[i] = 0
+        return x
